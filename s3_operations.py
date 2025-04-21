@@ -1,3 +1,5 @@
+"""Provides functionaties to add, fetch and delete S3 objects based on specific tags or metadata."""
+
 import os
 from os.path import dirname, join
 
@@ -14,12 +16,14 @@ s3_client = boto3.client("s3", region_name="ap-south-1")
 
 
 class S3Operations:
+    """class for adding, fetching and deleting objects with tags and metadata in s3 bucket."""
 
     def __init__(self):
+        """Initialize an instance of S3Operations class."""
         pass
 
     def add_s3_objects(self):
-
+        """Add objects with tags and metadata to s3 bucket."""
         for i in range(NO_OF_OBJECTS):
             tags, meta_data = self.generate_tags_metadata(i)
             tags_str = "&".join(f"{key}={value}" for key, value in tags.items())
@@ -42,6 +46,15 @@ class S3Operations:
         print("All files uploaded successfully")
 
     def generate_tags_metadata(self, i):
+        """Generate tags and metadata based on condition.
+
+        Args:
+            i (int): value to check
+
+        Returns:
+            dict: tags
+            dict: meta_data
+        """
         tags = dict()
         meta_data = dict()
         if i < 1500:
@@ -58,6 +71,11 @@ class S3Operations:
         return tags, meta_data
 
     def get_objects(self):
+        """Return the list of keys of objects present in the s3 bucket.
+
+        Returns:
+            list: objects
+        """
         objects = []
         paginator = s3_client.get_paginator("list_objects_v2")
         page_iterator = paginator.paginate(Bucket=BUCKET_NAME)
@@ -70,12 +88,24 @@ class S3Operations:
         return objects
 
     def save_file(self, output_filename, output):
+        """Save all items of list to a text file.
+
+        Args:
+            output_filename (str): filename of output text file
+            output (list): list of items to save
+        """
         with open(output_filename, "w") as file:
             for item in output:
                 file.write(item)
                 file.write("\n")
 
     def fetch_s3_objects_by_tags(self, tag_key, tag_val):
+        """Filter s3 objects by tags(tag_key & tag_val) and save filtered object keys into a txt file.
+
+        Args:
+            tag_key (str): key of a tag used to filter s3 objects
+            tag_val (str): value of a tag used to filter s3 objects
+        """
         output = []
         objects = self.get_objects()
 
@@ -95,6 +125,12 @@ class S3Operations:
         )
 
     def fetch_s3_objects_by_metadata(self, key, val):
+        """Filter s3 objects by metadata(key & val) and save filtered object keys into a txt file.
+
+        Args:
+            key (str): key of a metdata used to filter s3 objects
+            val (str): value of a metadata used to filter s3 objects
+        """
         output = []
         objects = self.get_objects()
 
@@ -113,6 +149,12 @@ class S3Operations:
         print(f"{len(output)} files fetched successfully with metadata {key} = {val}")
 
     def delete_s3_objects_by_tags(self, tag_key, tag_val):
+        """Filter s3 objects by tags(key & val) and delete filtered objects.
+
+        Args:
+            tag_key (str): key of a tag used to filter s3 objects
+            tag_val (str): value of a tag used to filter s3 objects
+        """
         output = []
         objects = self.get_objects()
 
@@ -131,6 +173,12 @@ class S3Operations:
         print(f"{len(output)} files deleted succesfully with tag {tag_key} = {tag_val}")
 
     def delete_s3_objects_by_metadata(self, key, val):
+        """Filter s3 objects by metadata(key & val) and delete filtered objects.
+
+        Args:
+            key (str): key of a metdata used to filter s3 objects
+            val (str): value of a metdata used to filter s3 objects
+        """
         output = []
         objects = self.get_objects()
 
@@ -149,6 +197,7 @@ class S3Operations:
         print(f"{len(output)} files deleted succesfully with metadata {key} = {val}")
 
     def total_objects(self):
+        """Print total number of objects present in the s3 bucket."""
         s3_resource = boto3.resource("s3", region_name="ap-south-1")
         count = 0
         for obj in s3_resource.Bucket(BUCKET_NAME).objects.all():
@@ -163,12 +212,12 @@ if __name__ == "__main__":
     # obj.add_s3_objects()
 
     # obj.fetch_s3_objects_by_tags("tagB", 20)
-    obj.fetch_s3_objects_by_tags("tagA", 10)
+    # obj.fetch_s3_objects_by_tags("tagA", 10)
     # obj.fetch_s3_objects_by_tags("tagC", 30)
 
     # obj.fetch_s3_objects()
 
-    # obj.fetch_s3_objects_by_metadata("meta_key", 2000)
+    obj.fetch_s3_objects_by_metadata("meta_key", 2000)
 
     # obj.delete_s3_objects_by_tags("tagC", 30)
     # obj.delete_s3_objects_by_tags("tagA", 10)
