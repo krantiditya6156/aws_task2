@@ -5,36 +5,31 @@ from os.path import dirname, join
 
 import boto3
 
-NO_OF_OBJECTS = 2500
-FILE_NAME = "data"
-BUCKET_NAME = "data-bucket-s797866"
-
 script_dir = dirname(__file__)
-
-
-s3_client = boto3.client("s3", region_name="ap-south-1")
 
 
 class S3Operations:
     """class for adding, fetching and deleting objects with tags and metadata in s3 bucket."""
 
-    def __init__(self):
+    def __init__(self, bucket_name, region_name):
         """Initialize an instance of S3Operations class."""
-        pass
+        self.bucket_name = bucket_name
+        self.region_name = region_name
+        self.s3_client = boto3.client("s3", region_name=self.region_name)
 
-    def add_s3_objects(self):
+    def add_s3_objects(self, no_of_objects):
         """Add objects with tags and metadata to s3 bucket."""
-        for i in range(NO_OF_OBJECTS):
+        for i in range(no_of_objects):
             tags, meta_data = self.generate_tags_metadata(i)
             tags_str = "&".join(f"{key}={value}" for key, value in tags.items())
 
-            filename = FILE_NAME + str(i) + ".txt"
+            filename = "data" + str(i) + ".txt"
             filepath = join(script_dir, filename)
             with open(filename, "w") as file:
                 file.write("text document " + str(i))
             file.close()
 
-            s3_client.upload_file(
+            self.s3_client.upload_file(
                 filepath,
                 BUCKET_NAME,
                 filename,
@@ -77,7 +72,7 @@ class S3Operations:
             list: objects
         """
         objects = []
-        paginator = s3_client.get_paginator("list_objects_v2")
+        paginator = self.s3_client.get_paginator("list_objects_v2")
         page_iterator = paginator.paginate(Bucket=BUCKET_NAME)
 
         for page in page_iterator:
@@ -94,7 +89,9 @@ class S3Operations:
             output_filename (str): filename of output text file
             output (list): list of items to save
         """
-        with open(output_filename, "w") as file:
+        output_dir = "output/"
+        os.makedirs(output_dir, exist_ok=True)
+        with open(join(output_dir, output_filename), "w") as file:
             for item in output:
                 file.write(item)
                 file.write("\n")
@@ -111,7 +108,7 @@ class S3Operations:
 
         print("filtering objects by tags...")
         for obj_key in objects:
-            tags = s3_client.get_object_tagging(Bucket=BUCKET_NAME, Key=obj_key)[
+            tags = self.s3_client.get_object_tagging(Bucket=BUCKET_NAME, Key=obj_key)[
                 "TagSet"
             ]
 
@@ -136,7 +133,7 @@ class S3Operations:
 
         print("filtering objects by metadata...")
         for obj_key in objects:
-            metadata = s3_client.head_object(Bucket=BUCKET_NAME, Key=obj_key)[
+            metadata = self.s3_client.head_object(Bucket=BUCKET_NAME, Key=obj_key)[
                 "Metadata"
             ]
 
@@ -160,7 +157,7 @@ class S3Operations:
 
         print("filtering objects by tags...")
         for obj_key in objects:
-            tags = s3_client.get_object_tagging(Bucket=BUCKET_NAME, Key=obj_key)[
+            tags = self.s3_client.get_object_tagging(Bucket=BUCKET_NAME, Key=obj_key)[
                 "TagSet"
             ]
 
@@ -169,7 +166,7 @@ class S3Operations:
                     output.append(obj_key)
 
         for item in output:
-            s3_client.delete_object(Bucket=BUCKET_NAME, Key=item)
+            self.s3_client.delete_object(Bucket=BUCKET_NAME, Key=item)
         print(f"{len(output)} files deleted succesfully with tag {tag_key} = {tag_val}")
 
     def delete_s3_objects_by_metadata(self, key, val):
@@ -184,7 +181,7 @@ class S3Operations:
 
         print("filtering objects by metadata...")
         for obj_key in objects:
-            metadata = s3_client.head_object(Bucket=BUCKET_NAME, Key=obj_key)[
+            metadata = self.s3_client.head_object(Bucket=BUCKET_NAME, Key=obj_key)[
                 "Metadata"
             ]
 
@@ -193,7 +190,7 @@ class S3Operations:
                     output.append(obj_key)
 
         for item in output:
-            s3_client.delete_object(Bucket=BUCKET_NAME, Key=item)
+            self.s3_client.delete_object(Bucket=BUCKET_NAME, Key=item)
         print(f"{len(output)} files deleted succesfully with metadata {key} = {val}")
 
     def total_objects(self):
@@ -207,17 +204,21 @@ class S3Operations:
 
 if __name__ == "__main__":
 
-    obj = S3Operations()
+    NO_OF_OBJECTS = 2500
+    BUCKET_NAME = "data-bucket-s797866"
+    REGION_NAME = "ap-south-1"
 
-    # obj.add_s3_objects()
+    obj = S3Operations(bucket_name=BUCKET_NAME, region_name=REGION_NAME)
 
-    # obj.fetch_s3_objects_by_tags("tagB", 20)
-    # obj.fetch_s3_objects_by_tags("tagA", 10)
-    # obj.fetch_s3_objects_by_tags("tagC", 30)
+    # obj.add_s3_objects(NO_OF_OBJECTS)
 
-    # obj.fetch_s3_objects()
+    obj.fetch_s3_objects_by_tags("tagB", 20)
+    obj.fetch_s3_objects_by_tags("tagA", 10)
+    obj.fetch_s3_objects_by_tags("tagC", 30)
 
     obj.fetch_s3_objects_by_metadata("meta_key", 2000)
+    obj.fetch_s3_objects_by_metadata("meta_key", 1500)
+    obj.fetch_s3_objects_by_metadata("meta_key", 2500)
 
     # obj.delete_s3_objects_by_tags("tagC", 30)
     # obj.delete_s3_objects_by_tags("tagA", 10)
