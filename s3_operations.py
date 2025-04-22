@@ -25,13 +25,13 @@ class S3Operations:
 
             filename = "data" + str(i) + ".txt"
             filepath = join(script_dir, filename)
-            with open(filename, "w") as file:
+            with open(filepath, "w") as file:
                 file.write("text document " + str(i))
             file.close()
 
             self.s3_client.upload_file(
                 filepath,
-                BUCKET_NAME,
+                self.bucket_name,
                 filename,
                 ExtraArgs={"Metadata": meta_data, "Tagging": tags_str},
             )
@@ -73,7 +73,7 @@ class S3Operations:
         """
         objects = []
         paginator = self.s3_client.get_paginator("list_objects_v2")
-        page_iterator = paginator.paginate(Bucket=BUCKET_NAME)
+        page_iterator = paginator.paginate(Bucket=self.bucket_name)
 
         for page in page_iterator:
             for object in page["Contents"]:
@@ -108,9 +108,9 @@ class S3Operations:
 
         print("filtering objects by tags...")
         for obj_key in objects:
-            tags = self.s3_client.get_object_tagging(Bucket=BUCKET_NAME, Key=obj_key)[
-                "TagSet"
-            ]
+            tags = self.s3_client.get_object_tagging(
+                Bucket=self.bucket_name, Key=obj_key
+            )["TagSet"]
 
             for tag in tags:
                 if tag["Key"] == tag_key and str(tag["Value"]) == str(tag_val):
@@ -133,7 +133,7 @@ class S3Operations:
 
         print("filtering objects by metadata...")
         for obj_key in objects:
-            metadata = self.s3_client.head_object(Bucket=BUCKET_NAME, Key=obj_key)[
+            metadata = self.s3_client.head_object(Bucket=self.bucket_name, Key=obj_key)[
                 "Metadata"
             ]
 
@@ -157,16 +157,16 @@ class S3Operations:
 
         print("filtering objects by tags...")
         for obj_key in objects:
-            tags = self.s3_client.get_object_tagging(Bucket=BUCKET_NAME, Key=obj_key)[
-                "TagSet"
-            ]
+            tags = self.s3_client.get_object_tagging(
+                Bucket=self.bucket_name, Key=obj_key
+            )["TagSet"]
 
             for tag in tags:
                 if tag["Key"] == tag_key and str(tag["Value"]) == str(tag_val):
                     output.append(obj_key)
 
         for item in output:
-            self.s3_client.delete_object(Bucket=BUCKET_NAME, Key=item)
+            self.s3_client.delete_object(Bucket=self.bucket_name, Key=item)
         print(f"{len(output)} files deleted succesfully with tag {tag_key} = {tag_val}")
 
     def delete_s3_objects_by_metadata(self, key, val):
@@ -181,7 +181,7 @@ class S3Operations:
 
         print("filtering objects by metadata...")
         for obj_key in objects:
-            metadata = self.s3_client.head_object(Bucket=BUCKET_NAME, Key=obj_key)[
+            metadata = self.s3_client.head_object(Bucket=self.bucket_name, Key=obj_key)[
                 "Metadata"
             ]
 
@@ -190,14 +190,14 @@ class S3Operations:
                     output.append(obj_key)
 
         for item in output:
-            self.s3_client.delete_object(Bucket=BUCKET_NAME, Key=item)
+            self.s3_client.delete_object(Bucket=self.bucket_name, Key=item)
         print(f"{len(output)} files deleted succesfully with metadata {key} = {val}")
 
     def total_objects(self):
         """Print total number of objects present in the s3 bucket."""
         s3_resource = boto3.resource("s3", region_name="ap-south-1")
         count = 0
-        for obj in s3_resource.Bucket(BUCKET_NAME).objects.all():
+        for obj in s3_resource.Bucket(self.bucket_name).objects.all():
             count += 1
         print("Total Objects in bucket: ", count)
 
