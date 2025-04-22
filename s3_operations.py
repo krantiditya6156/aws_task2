@@ -200,6 +200,7 @@ class S3Operations:
         for obj in s3_resource.Bucket(self.bucket_name).objects.all():
             count += 1
         print("Total Objects in bucket: ", count)
+        return count
 
 
 if __name__ == "__main__":
